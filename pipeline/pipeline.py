@@ -7,13 +7,13 @@ print('arguments', sys.argv)
 month = int(sys.argv[1])
 print(f'Hello pipeline, month={month}')
 
-df  = pd.DataFrame({'day': [1, 2, 3], 'Num_students' : [11, 22, 33]})
+df  = pd.DataFrame({'day': [1, 2], 'Num_students' : [11, 22]})
 df['month'] = month
 
 print(df.head())
 
 
-df.to_parquet(f'output_{month}.parquet')
+df.to_parquet(f"output_{month}.parquet")
 
 
-print ('Hello world')
+print (f'Hello pipeline, month{month}')
