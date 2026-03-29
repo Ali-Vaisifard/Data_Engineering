@@ -160,6 +160,10 @@ Explanation:
 --entrypoint=bash → opens a bash shell inside the container
 
 --rm → removes the container automatically when it stops
+This is VERY important:
+
+--rm → deletes container when stopped
+You lose everything tied to it
 
 The --rm flag is useful for temporary runs because it prevents stopped containers from accumulating on your system.
 
@@ -272,7 +276,7 @@ docker run -it --rm \
   -e POSTGRES_USER="root" \
   -e POSTGRES_PASSWORD="root" \ 
   -e POSTGRES_DB="ny_taxi" \
-  -v ny_taxi_DB:/var/lib/postgresql \
+  -v ny_taxi_DB:/var/lib/postgresql/data \
   -p 5432:5432 \
   postgres:18
 
@@ -293,7 +297,7 @@ docker run -it --rm \
   -e POSTGRES_USER="root" \
   -e POSTGRES_PASSWORD="root" \ 
   -e POSTGRES_DB="ny_taxi" \
-  -v $(pwd)/ny_taxi_DB:/var/lib/postgresql \
+  -v $(pwd)/ny_taxi_DB:/var/lib/postgresql/data \
   -p 5432:5432 \
   postgres:18
 
@@ -431,6 +435,16 @@ engine = create_engine('postgresql+psycopg://root:root@localhost:5432/ny_taxi')
 
 Get Thw Schema:
 print(pd.io.sql.get_schema(df, name='yellow_taxi_data'))
+Explanation: pd.io.sql.get_schema(...)
+
+This function:
+
+Looks at the DataFrame structure
+Converts it into a SQL table schema
+
+It does NOT create the table
+It just returns the SQL code as a string
+
 
 Output: 
 CREATE TABLE "yellow_taxi_data" (
@@ -459,4 +473,45 @@ CREATE TABLE "yellow_taxi_data" (
 
 Create the Table:
 df.head(n=0).to_sql(name='yellow_taxi_data', con=engine, if_exists='replace')
+
+Explanation: 
+It creates an empty SQL table in your database
+The table structure matches your DataFrame (df)
+No data is inserted
+
+df.head(0) → empty DataFrame (only columns)
+.to_sql(...) → creates table
+'replace' → drops old table + recreates
+Result → empty table with correct schema
+
+
+
+Then code this: 
+
+import urllib.request
+import pyarrow.parquet as pq
+
+# download the parquet file locally
+urllib.request.urlretrieve(url, "yellow_tripdata_2025-01.parquet")
+
+pq_file = pq.ParquetFile("yellow_tripdata_2025-01.parquet")
+
+for batch in pq_file.iter_batches(batch_size=100000):
+    df_chunk = batch.to_pandas()
+    df_chunk.to_sql(name='yellow_taxi_data', con=engine, if_exists='append', index=False)
+    print(len(df_chunk))
+
+Explanation: Reads chunk by chunk
+Memory efficient
+Scalable
+Used in real pipelines
+
+
+pd.read_sql("SELECT COUNT(*) FROM yellow_taxi_data", con=engine)
+
+
+
+
+
+
 
