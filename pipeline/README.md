@@ -260,3 +260,203 @@ ENTRYPOINT ["python", "pipeline.py"]
 
 13. Running postgres from docker:
 
+You can run a containerized version of postgres, without installation.
+You only need to create environment variables and a volume to stop it.
+
+a) Running Postgres in a Container 
+
+Create a folder anywhere for saving data in Postgres. 
+We will use the folder ny_taxi_DB
+
+docker run -it --rm \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \ 
+  -e POSTGRES_DB="ny_taxi" \
+  -v ny_taxi_DB:/var/lib/postgresql \
+  -p 5432:5432 \
+  postgres:18
+
+
+    -e sets environment variables (user, password, database name)
+    -v ny_taxi_postgres_data:/var/lib/postgresql creates a named volume
+        Docker manages this volume automatically
+        Data persists even after container is removed
+        Volume is stored in Docker's internal storage
+    -p 5432:5432 maps port 5432 from container to host
+    postgres:18 uses PostgreSQL version 18 (latest as of Dec 2025)
+
+Another way (bind mount):
+
+mkdir ny_taxi_DB
+
+docker run -it --rm \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \ 
+  -e POSTGRES_DB="ny_taxi" \
+  -v $(pwd)/ny_taxi_DB:/var/lib/postgresql \
+  -p 5432:5432 \
+  postgres:18
+
+In this way first you create the directory and it is owned by the user. If docker is doing it it will be created and owned by the docker root user and may cause permission issues on linux.
+
+Named volume: name:/path
+Bind mount: /host/path:/container/path
+
+
+b) Connecting to PostgreSQL
+
+Install pgcli:
+
+uv add --dev pgcli
+--dev flag marks this as a development dependency. You may check it in the pyproject,toml file in the dependency-group section.
+
+uv run pgcli -h localhost -p 5432 -u root -d ny_taxi
+
+Now after entering your password try to run some queries: 
+
+List of tables: 
+\dt
+
+Create a table:
+CREATE TABLE test (id INTEGER, name VARCHAR(50));
+
+Insert data: 
+INSERT INTO test VALUES (1, 'Hello Docker');
+
+Query data:
+SELECT * FROM test;
+
+-- Exit
+\q
+
+
+14. Importing data to pstgresql(Data Ingestion)
+
+a) create a Jupyter Notebook file (We will use it to read a csv file and export it to Postgres.
+
+Install Jupyter:
+uv add --dev jupyter
+
+Then run Jupyter notebook:
+uv run jupyter notebook
+
+Now create a new notebook and run the following code:
+
+The data can be ingested from any data sources in different formats: 
+
+parquet: 
+
+import pandas as pd 
+#read a sample of the data 
+prefix = 'https://d37ci6vzurychx.cloudfront.net/trip-data/)'
+url = f'{prefix}/yellow_tripdata_2025-01.parquet'
+
+df = pd.read_parquet(url)
+
+#Display the first rows 
+df.head()
+
+#Display the datatypes 
+df.dtypes
+
+#Check data  shape
+df.shape
+
+CSV:
+
+import pandas as pd 
+// read a sample of the data 
+prefix = 'your address prefix'
+url = f'{prefix}/file_name.csv'
+
+df = pd.read_csv(url)
+
+df.head()
+df.dtypes
+df.shape
+
+
+In case you have any problems in the data types you may run this code:
+
+dtype = {
+    "VendorID": "Int64",
+    "passenger_count": "Int64",
+    "trip_distance": "float64",
+    "RatecodeID": "Int64",
+    "store_and_fwd_flag": "string",
+    "PULocationID": "Int64",
+    "DOLocationID": "Int64",
+    "payment_type": "Int64",
+    "fare_amount": "float64",
+    "extra": "float64",
+    "mta_tax": "float64",
+    "tip_amount": "float64",
+    "tolls_amount": "float64",
+    "improvement_surcharge": "float64",
+    "total_amount": "float64",
+    "congestion_surcharge": "float64"
+}
+
+parse_dates = [
+    "tpep_pickup_datetime",
+    "tpep_dropoff_datetime"
+]
+
+df = pd.read_csv(
+    prefix + 'yellow_tripdata_2021-01.csv.gz',
+    nrows=100,
+    dtype=dtype,
+    parse_dates=parse_dates
+)
+
+
+Data Ingstion into postgres: 
+In the notebook we follow these steps: 
+
+1. Download the dataset(CSV or Parquet)
+2. read it in chunks with pandas
+3. Convert the datatypes if it is necessary(Data transformation)
+4. Create an engine to connect postgres and jupyter using SQLAlchemy 
+5. Insert data into PostgreSQL
+
+
+Install SQLAlchemy:
+uv add aqlalchemy "psycopg[binary,pool]"
+uv add psycopg-binary
+
+
+In the notebook create the engine: 
+from sqlalchemy import create_engine
+engine = create_engine('postgresql+psycopg://root:root@localhost:5432/ny_taxi')
+
+Get Thw Schema:
+print(pd.io.sql.get_schema(df, name='yellow_taxi_data'))
+
+Output: 
+CREATE TABLE "yellow_taxi_data" (
+"VendorID" INTEGER,
+  "tpep_pickup_datetime" TIMESTAMP,
+  "tpep_dropoff_datetime" TIMESTAMP,
+  "passenger_count" REAL,
+  "trip_distance" REAL,
+  "RatecodeID" REAL,
+  "store_and_fwd_flag" TEXT,
+  "PULocationID" INTEGER,
+  "DOLocationID" INTEGER,
+  "payment_type" INTEGER,
+  "fare_amount" REAL,
+  "extra" REAL,
+  "mta_tax" REAL,
+  "tip_amount" REAL,
+  "tolls_amount" REAL,
+  "improvement_surcharge" REAL,
+  "total_amount" REAL,
+  "congestion_surcharge" REAL,
+  "Airport_fee" REAL,
+  "cbd_congestion_fee" REAL
+)
+
+
+Create the Table:
+df.head(n=0).to_sql(name='yellow_taxi_data', con=engine, if_exists='replace')
+

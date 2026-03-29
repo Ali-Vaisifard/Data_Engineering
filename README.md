@@ -141,6 +141,7 @@ cd test
 touch file1.txt file2.txt file3.txt
 echo "Hello from host" > file1.txt
 cat file1.txt
+
 Step 2 — Create script.py
 
 Inside the test/ directory, create a file named script.py:
@@ -183,6 +184,7 @@ pwd
 Now run:
 
 docker run -it --entrypoint=bash -v $(pwd)/test:/app/test python:3.13.11
+
 Step 4 — Access and Execute Script Inside Container
 
 Inside the container:
