@@ -74,6 +74,44 @@ sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 ```
 
+Add Docker repository
+```bash
+echo \
+"deb [arch=$(dpkg --print-architecture) \
+signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+```
+Install Docker Engine
+```bash
+sudo apt update
+
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+Again verify Docker installation:
+```bash
+docker --version
+docker run hello-world
+```
+Run Docker without sudo (IMPORTANT)
+
+By default, Docker needs sudo. Fix that:
+```bash
+sudo usermod -aG docker $USER
+```
+
+
+Then restart your session (or run):
+```bash
+newgrp docker
+```
+
+Now test:
+```bash
+docker run hello-world
+```
 ---
 
 ## 🖥️ 3. Running an Ubuntu Container
