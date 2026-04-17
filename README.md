@@ -95,6 +95,16 @@ Again verify Docker installation:
 docker --version
 docker run hello-world
 ```
+Start Docker service
+```bash
+sudo systemctl start docker
+```
+To make it start automatically on boot:
+```bash
+sudo systemctl enable docker
+```
+
+
 ### Run Docker without sudo (IMPORTANT)
 
 By default, Docker needs sudo. Fix that:
