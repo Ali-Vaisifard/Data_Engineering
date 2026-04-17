@@ -52,6 +52,27 @@ echo 'PS1="> "' >> ~/.bashrc
 docker --version
 docker run hello-world
 ```
+In case you dont have it:
+
+first Update your system:
+```bash
+sudo apt update
+sudo apt upgrade -y
+```
+Install required packages
+```bash
+sudo apt install -y ca-certificates curl gnupg
+```
+
+Add Docker’s official GPG key
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+```
 
 ---
 
