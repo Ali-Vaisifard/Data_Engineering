@@ -95,7 +95,7 @@ Again verify Docker installation:
 docker --version
 docker run hello-world
 ```
-Run Docker without sudo (IMPORTANT)
+### Run Docker without sudo (IMPORTANT)
 
 By default, Docker needs sudo. Fix that:
 ```bash
