@@ -25,6 +25,11 @@ cd pipeline
 ```bash
 pip install uv
 ```
+In case you need to update pip:
+
+```bash
+python3 -m pip install --upgrade pip
+```
 
 ## 4. Initialize the Virtual Environment
 
